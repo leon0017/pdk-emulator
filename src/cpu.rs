@@ -1,3 +1,4 @@
+use snafu::prelude::*;
 use std::iter;
 
 use crate::time;
@@ -24,6 +25,15 @@ where
     T: Default + Clone,
 {
     iter::repeat(T::default()).take(len).collect()
+}
+
+#[derive(Debug, Snafu)]
+#[snafu(visibility(pub))]
+pub enum ProgramError {
+    #[snafu(display(
+        "The program is too large to be loaded into ROM, size in bytes: '{program_len_bytes}'"
+    ))]
+    ProgramTooLarge { program_len_bytes: usize },
 }
 
 impl CPU {
@@ -74,5 +84,27 @@ impl CPU {
                 start_nanos = now_nanos;
             }
         }
+    }
+
+    pub fn load_program(&mut self, program: Vec<u8>) -> Result<(), ProgramError> {
+        // Multiply rom len by two to convert amount of words to amount of bytes
+        ensure!(
+            program.len() <= self.rom.len() * 2,
+            ProgramTooLargeSnafu {
+                program_len_bytes: program.len()
+            }
+        );
+
+        // Clear ROM just in case
+        for v in &mut self.rom {
+            *v = 0x0000;
+        }
+
+        for (i, chunk) in program.chunks(2).enumerate() {
+            let word: u16 = ((chunk[1] as u16) << 8) | (chunk[0] as u16);
+            self.rom[i] = word;
+        }
+
+        Ok(())
     }
 }

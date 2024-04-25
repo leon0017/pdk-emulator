@@ -13,12 +13,22 @@ const IO_SIZE_BYTES: usize = 64;
 fn main() {
     // TODO: Prettier error logging instead of unwrapping
     let program_bytes = program::read(TEST_PROGRAM).unwrap();
-    for b in program_bytes {
-        print!("{b:02X} ");
+
+    let mut cpu = CPU::new(ROM_SIZE_WORDS, RAM_SIZE_BYTES, IO_SIZE_BYTES);
+
+    println!("PROGRAM:");
+    for b in &program_bytes {
+        print!("{:02X} ", b);
     }
     println!();
 
-    let mut cpu = CPU::new(ROM_SIZE_WORDS, RAM_SIZE_BYTES, IO_SIZE_BYTES);
+    cpu.load_program(program_bytes).unwrap();
+
+    println!("ROM:");
+    for b in &cpu.rom {
+        print!("{:04X} ", b);
+    }
+
     cpu.set_clock_speed(1_000_000);
     cpu.main_clock_loop();
 }
