@@ -2,7 +2,7 @@ use core::panic;
 use snafu::prelude::*;
 use std::iter;
 
-use crate::{peripherals, time};
+use crate::{arch::PDKArch, peripherals, time};
 
 const NANOS_IN_SEC: f64 = 1_000_000_000.0;
 
@@ -19,6 +19,7 @@ pub struct CPU {
     t16: u16,                        // Timer T16 value
     global_interrupts_enabled: bool, // Are global interrupts enabled
     interrupts_active: bool,         // Internal status that cpu started interrupt
+    arch: PDKArch,                   // CPU architecture (e.g. pdk14, pdk15...)
 }
 
 fn zero_vec<T>(len: usize) -> Vec<T>
@@ -103,7 +104,12 @@ impl CPU {
     /// # Panics
     /// Panics when `ram_size_bytes` or `io_size_bytes` is above 256
     #[must_use]
-    pub fn new(rom_size_words: usize, ram_size_bytes: usize, io_size_bytes: usize) -> Self {
+    pub fn new(
+        rom_size_words: usize,
+        ram_size_bytes: usize,
+        io_size_bytes: usize,
+        arch: PDKArch,
+    ) -> Self {
         assert!(ram_size_bytes <= 256);
         assert!(io_size_bytes <= 256);
 
@@ -119,6 +125,7 @@ impl CPU {
             t16: 0x0000,
             global_interrupts_enabled: false,
             interrupts_active: false,
+            arch,
         }
     }
 
@@ -137,17 +144,26 @@ impl CPU {
     pub fn main_clock_loop(&mut self) -> ! {
         let mut start_nanos = time::sys_nanos().unwrap();
 
+        let mut skip_cycles = 0;
         let mut i: u64 = 0;
         loop {
             let now_nanos = time::sys_nanos().unwrap();
             if (now_nanos - start_nanos) > self.freq_pause_nanos {
-                // TODO: Run current instruction
+                i += 1;
 
                 if i % self.freq_hz == 0 {
                     println!("Clock has ticked: {i} times");
                 }
 
-                i += 1;
+                if skip_cycles > 0 {
+                    // TODO: Don't skip cycles if the emulation is running behind.
+                    skip_cycles -= 1;
+                    start_nanos = now_nanos;
+                    continue;
+                }
+
+                // Run current instruction, -1 as the instruction handler always adds a clock cycle
+                skip_cycles = (self.arch.instruction_handler)(self) - 1;
 
                 start_nanos = now_nanos;
             }

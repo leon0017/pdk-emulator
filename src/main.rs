@@ -1,5 +1,6 @@
 use crate::cpu::CPU;
 
+pub mod arch;
 pub mod cpu;
 pub mod peripherals;
 pub mod program;
@@ -14,14 +15,14 @@ const IO_SIZE_BYTES: usize = 64;
 
 #[must_use]
 pub fn default_cpu() -> CPU {
-    CPU::new(ROM_SIZE_WORDS, RAM_SIZE_BYTES, IO_SIZE_BYTES)
+    CPU::new(ROM_SIZE_WORDS, RAM_SIZE_BYTES, IO_SIZE_BYTES, arch::pdk14())
 }
 
 fn main() {
     // TODO: Prettier error logging instead of unwrapping
     let program_bytes = program::read(TEST_PROGRAM).unwrap();
 
-    let mut cpu = CPU::new(ROM_SIZE_WORDS, RAM_SIZE_BYTES, IO_SIZE_BYTES);
+    let mut cpu = CPU::new(ROM_SIZE_WORDS, RAM_SIZE_BYTES, IO_SIZE_BYTES, arch::pdk14());
 
     println!("PROGRAM:");
     for b in &program_bytes {
