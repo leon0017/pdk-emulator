@@ -362,4 +362,26 @@ impl CPU {
         data |= unsafe { u16::from(self.ram_get_unsafe(new_stack_pointer)) };
         data
     }
+
+    fn add_solve_flags_vacz(value1: u16, value2: i16, c: i16) -> u8 {
+        let zr = ((((value1 & 0xFF) as i16) + (value2 & 0xFF) + c) & 0xFF) == 0;
+        let cy = ((((value1 & 0xFF) as i16) + (value2 & 0xFF) + c) >> 8) & 1;
+        let ac = ((((value1 & 0xF) as i16) + (value2 & 0xF) + c) >> 4) & 1;
+        let ov = (((((value1 & 0x7F) as i16) + (value2 & 0x7F) + c) >> 7) & 1) ^ cy;
+
+        ((ov << 3) as u8) | ((ac << 2) as u8) | ((cy << 1) as u8) | u8::from(zr)
+    }
+
+    fn sub_solve_flags_vacz(value1: i16, value2: i16, c: i16) -> u8 {
+        let zr = (((value1 & 0xFF) - (value2 & 0xFF) - c) & 0xFF) == 0;
+        let cy = (((value1 & 0xFF) - (value2 & 0xFF) - c) >> 8) & 1;
+        let ac = if (value1 & 0xF) < ((value2 & 0xF) + c) {
+            1i16
+        } else {
+            0
+        };
+        let ov = ((((value1 & 0x7F) - (value2 & 0x7F)) >> 7) & 1) ^ cy;
+
+        ((ov << 3) as u8) | ((ac << 2) as u8) | ((cy << 1) as u8) | u8::from(zr)
+    }
 }
