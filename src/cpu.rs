@@ -86,7 +86,7 @@ impl CPU {
         }
     }
 
-    pub fn load_program(&mut self, program: Vec<u8>) -> Result<(), ProgramError> {
+    pub fn load_program(&mut self, program: &[u8]) -> Result<(), ProgramError> {
         // Multiply rom len by two to convert amount of words to amount of bytes
         ensure!(
             program.len() <= self.rom.len() * 2,
@@ -101,7 +101,7 @@ impl CPU {
         }
 
         for (i, chunk) in program.chunks(2).enumerate() {
-            let word: u16 = ((chunk[1] as u16) << 8) | (chunk[0] as u16);
+            let word: u16 = (u16::from(chunk[1]) << 8) | u16::from(chunk[0]);
             self.rom[i] = word;
         }
 

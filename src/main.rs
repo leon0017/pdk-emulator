@@ -18,16 +18,17 @@ fn main() {
 
     println!("PROGRAM:");
     for b in &program_bytes {
-        print!("{:02X} ", b);
+        print!("{b:02X} ");
     }
     println!();
 
-    cpu.load_program(program_bytes).unwrap();
+    cpu.load_program(program_bytes.as_slice()).unwrap();
 
     println!("ROM:");
     for b in &cpu.rom {
-        print!("{:04X} ", b);
+        print!("{b:04X} ");
     }
+    println!();
 
     cpu.set_clock_speed(1_000_000);
     cpu.main_clock_loop();
